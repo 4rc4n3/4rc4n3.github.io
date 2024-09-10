@@ -50,7 +50,7 @@ function DemoPageContent({ pathname }: { pathname: string }) {
   );
 }
 
-export const App() {
+export const App = () => {
   const [pathname, setPathname] = React.useState('/dashboard');
 
   const router = React.useMemo<Router>(() => {
