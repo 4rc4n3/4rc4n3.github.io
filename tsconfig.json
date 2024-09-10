@@ -19,5 +19,6 @@
     "composite": true,
     "incremental": true,
     "jsx": "react-jsx"
-  }
+  },
+  "include": ["src"]
 }
