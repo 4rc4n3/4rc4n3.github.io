@@ -131,7 +131,7 @@ export const useAuth = () => {
 }
 
 export const Auth = ({children}: { children: ReactNode }) => {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const code = useMemo(() => new URLSearchParams(window.location.search).get('code'), []);
 
     const auth = useAuth();
@@ -145,6 +145,8 @@ export const Auth = ({children}: { children: ReactNode }) => {
             }).finally(() => {
                 setLoading(false);
             });
+        } else {
+            setLoading(false);
         }
     }, [code]);
 
