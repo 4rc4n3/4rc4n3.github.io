@@ -1,7 +1,8 @@
-import {SignInPage} from "@toolpad/core";
 import {BehaviorSubject, firstValueFrom} from "rxjs";
 import React, {ReactNode, useEffect, useMemo, useState} from "react";
 import {Loader} from "./Loader";
+import {SignIn} from "./SignIn";
+import {API} from "./config";
 
 declare module '@tanstack/react-query' {
     interface Register {
@@ -13,10 +14,6 @@ declare module '@tanstack/react-query' {
 
 const CLIENT_ID = 'Iv1.2a5ef27cea16aaca';
 const REDIRECT_URI = window.location.origin;
-
-export const signInWithRedirect = () => {
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}`
-}
 
 interface Token {
     value: string;
@@ -48,39 +45,52 @@ const convertToAuth = ({access_token, expires_in, refresh_token, refresh_token_e
     }
 });
 
-const GH_AUTH_URL = 'https://7rvizobdjs7gx3ygmd5fi5lcwe0pnvey.lambda-url.us-east-1.on.aws';
-
-const refresh = (refresh_token: string) => fetch(`${GH_AUTH_URL}/login/oauth/access_token?grant_type=refresh_token&refresh_token=${refresh_token}`, {
+const refresh = (refresh_token: string) => fetch(`${API.aws.origin}/login/oauth/access_token?grant_type=refresh_token&refresh_token=${refresh_token}`, {
     method: 'POST'
 }).then(res => res.json()).then(convertToAuth);
 
-const access = (code: string) => fetch(`${GH_AUTH_URL}/login/oauth/access_token?code=${code}&redirect_uri=${REDIRECT_URI}`, {
+const access = (code: string) => fetch(`${API.aws.origin}/login/oauth/access_token?code=${code}&redirect_uri=${REDIRECT_URI}`, {
     method: 'POST'
 }).then(res => res.json()).then(convertToAuth);
 
-class TokenProvider extends BehaviorSubject<Auth> {
-    constructor(init: Auth = TokenProvider.stored) {
-        super(init);
+class Authority extends BehaviorSubject<Auth> {
+    static readonly defaultState = {
+        access: {
+            value: '',
+            expires: 0
+        },
+        refresh: {
+            value: '',
+            expires: 0
+        }
+    };
+
+    constructor(key: string) {
+        super(JSON.parse(localStorage.getItem(key) || 'null') || Authority.defaultState);
         this.subscribe((auth) => {
-            localStorage.setItem('gh-auth', JSON.stringify(auth));
+            localStorage.setItem(key, JSON.stringify(auth));
         });
     }
 
-    static get stored() {
-        return JSON.parse(localStorage.getItem('gh-auth') || 'null') || {
-            access: {
-                value: '',
-                expires: 0
-            },
-            refresh: {
-                value: '',
-                expires: 0
-            }
-        };
+    async authorize<T>(fn: (auth: Auth) => T) {
+        const auth = await this.getAuth();
+        try {
+            return fn(auth);
+        } catch (e) {
+            return fn(await this.refresh(auth));
+        }
     }
 
-    store(auth: Auth) {
-        this.next(auth);
+    async refresh(auth: Auth) {
+        if (auth.refresh.expires > Date.now()) {
+            return refresh(auth.refresh.value).then((auth) => {
+                this.next(auth);
+
+                return auth;
+            })
+        }
+
+        return Promise.reject(Error('Not authenticated'))
     }
 
     async getAuth() {
@@ -89,20 +99,24 @@ class TokenProvider extends BehaviorSubject<Auth> {
                 return auth;
             }
 
-            if (auth.refresh.expires > Date.now()) {
-                return refresh(auth.refresh.value).then((auth) => {
-                    this.store(auth);
-
-                    return auth;
-                })
-            }
-
-            return Promise.reject(Error('Not authenticated'))
+            return this.refresh(auth);
         }))
+    }
+
+    clear() {
+        this.next(Authority.defaultState);
     }
 }
 
-export const tokenProvider = new TokenProvider();
+export const authority = new Authority('gh-auth');
+
+export const signInWithRedirect = () => {
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}`
+}
+
+export const signOut = () => {
+    authority.clear();
+}
 
 export const useAuth = () => {
     const [state, setState] = useState<Auth>({
@@ -117,7 +131,7 @@ export const useAuth = () => {
     });
 
     useEffect(() => {
-        const subscription = tokenProvider.subscribe(setState);
+        const subscription = authority.subscribe(setState);
 
         return () => {
             subscription.unsubscribe();
@@ -141,7 +155,7 @@ export const Auth = ({children}: { children: ReactNode }) => {
             setLoading(true);
             history.replaceState({}, '', window.location.pathname);
             access(code).then((data) => {
-                tokenProvider.store(data);
+                authority.next(data);
             }).finally(() => {
                 setLoading(false);
             });
@@ -150,17 +164,12 @@ export const Auth = ({children}: { children: ReactNode }) => {
         }
     }, [code]);
 
-    if (!auth.status) {
-        return <SignInPage signIn={() => {
-            return signInWithRedirect();
-        }} providers={[{
-            id: 'github',
-            name: 'GitHub',
-        }]}/>
-    }
-
     if (loading) {
         return <Loader/>
+    }
+
+    if (!auth.status) {
+        return <SignIn/>
     }
 
     return <>{children}</>

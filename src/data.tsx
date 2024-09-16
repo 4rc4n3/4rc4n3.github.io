@@ -1,6 +1,9 @@
 import {QueryClient, QueryClientProvider as _QueryClientProvider, QueryKey} from "@tanstack/react-query";
 import React, {ReactNode} from "react";
-import {tokenProvider} from "./auth";
+import {authority} from "./auth";
+import {API} from "./config";
+
+const isAlias = (origin: unknown): origin is keyof typeof API => typeof origin === 'string' && origin in API
 
 const serializeQueryKey = ([origin, ...queryKey]: QueryKey) => queryKey.reduce((acc: {
     url: URL;
@@ -21,7 +24,7 @@ const serializeQueryKey = ([origin, ...queryKey]: QueryKey) => queryKey.reduce((
 
     return acc;
 }, {
-    url: new URL(`${origin}`),
+    url: new URL(`${isAlias(origin) ? API[origin].origin : origin}`),
     body: undefined
 });
 
@@ -32,15 +35,15 @@ const client = new QueryClient({
             queryFn: async ({queryKey, meta}) => {
                 const {url, body} = serializeQueryKey(queryKey);
 
-                const auth = await tokenProvider.getAuth();
-
-                return fetch(url, {
-                    body,
-                    method: meta?.method || 'GET',
-                    headers: {
-                        Authorization: `Bearer ${auth.access.value}`
-                    }
-                }).then((res) => res.json())
+                return authority.authorize(
+                    ({access}) => fetch(url, {
+                        body,
+                        method: meta?.method || 'GET',
+                        headers: {
+                            Authorization: `Bearer ${access.value}`
+                        }
+                    }).then((res) => res.json())
+                )
             }
         },
     },
