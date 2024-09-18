@@ -1,3 +1,5 @@
+import {DateTime} from "luxon";
+
 export interface InstallationsDTO {
     total_count: number
     installations: InstallationDTO[]
@@ -23,8 +25,8 @@ export interface InstallationDTO {
         organization_self_hosted_runners: string
     }
     events: string[]
-    created_at: string
-    updated_at: string
+    created_at: DateTime<true>
+    updated_at: DateTime<true>
     single_file_name: any
     has_multiple_single_files: boolean
     single_file_paths: any[]
@@ -215,8 +217,8 @@ export interface UnblendedCostDTO {
 }
 
 export interface TimePeriodDTO {
-    Start: string
-    End: string
+    Start: DateTime<true>
+    End: DateTime<true>
 }
 
 export interface TotalDTO {
@@ -262,6 +264,12 @@ export interface UserDTO {
     public_gists: number
     followers: number
     following: number
-    created_at: string
-    updated_at: string
+    created_at: DateTime<true>
+    updated_at: DateTime<true>
 }
+
+export const convertDTO = <T>(dto: T): T => JSON.parse(JSON.stringify(dto), (key, value) => {
+    const dt = DateTime.fromISO(value);
+    return dt.isValid ? dt : value;
+})
+

@@ -14,9 +14,11 @@
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^6.0.2",
     "@mui/material": "^6.0.2",
+    "@mui/x-date-pickers": "^7.17.0",
     "@tanstack/react-query": "^5.56.0",
     "@toolpad/core": "^0.5.2",
     "@toolpad/utils": "^0.5.2",
+    "luxon": "^3.5.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "rxjs": "^7.8.1"
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@parcel/config-default": "^2.12.0",
     "@parcel/transformer-svg-react": "^2.12.0",
+    "@types/luxon": "^3.4.2",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "buffer": "^5.5.0||^6.0.0",

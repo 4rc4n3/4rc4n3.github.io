@@ -37,7 +37,9 @@ export const theme = createTheme({
             styleOverrides: {
                 root: {
                     [`.${typographyClasses.h6}`]: {
-                        fontWeight: 300
+                        fontWeight: 300,
+                        fontSize: 32,
+                        letterSpacing: -3,
                     }
                 }
             }

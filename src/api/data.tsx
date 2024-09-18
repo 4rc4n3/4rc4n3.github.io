@@ -2,6 +2,7 @@ import {QueryClient, QueryClientProvider as _QueryClientProvider, QueryKey} from
 import React, {ReactNode} from "react";
 import {authority} from "./auth";
 import {API} from "./config";
+import {convertDTO} from "./dto";
 
 const isAlias = (origin: unknown): origin is keyof typeof API => typeof origin === 'string' && origin in API
 
@@ -42,7 +43,7 @@ const client = new QueryClient({
                         headers: {
                             Authorization: `Bearer ${access.value}`
                         }
-                    }).then((res) => res.json())
+                    }).then((res) => res.json()).then(convertDTO)
                 )
             }
         },

@@ -1,7 +1,5 @@
 import {BehaviorSubject, firstValueFrom} from "rxjs";
-import React, {ReactNode, useEffect, useMemo, useState} from "react";
-import {Loader} from "./Loader";
-import {SignIn} from "./SignIn";
+import {useEffect, useState} from "react";
 import {API} from "./config";
 
 declare module '@tanstack/react-query' {
@@ -49,7 +47,7 @@ const refresh = (refresh_token: string) => fetch(`${API.aws.origin}/login/oauth/
     method: 'POST'
 }).then(res => res.json()).then(convertToAuth);
 
-const access = (code: string) => fetch(`${API.aws.origin}/login/oauth/access_token?code=${code}&redirect_uri=${REDIRECT_URI}`, {
+export const access = (code: string) => fetch(`${API.aws.origin}/login/oauth/access_token?code=${code}&redirect_uri=${REDIRECT_URI}`, {
     method: 'POST'
 }).then(res => res.json()).then(convertToAuth);
 
@@ -144,33 +142,3 @@ export const useAuth = () => {
     }
 }
 
-export const Auth = ({children}: { children: ReactNode }) => {
-    const [loading, setLoading] = useState(true);
-    const code = useMemo(() => new URLSearchParams(window.location.search).get('code'), []);
-
-    const auth = useAuth();
-
-    useEffect(() => {
-        if (code) {
-            setLoading(true);
-            history.replaceState({}, '', window.location.pathname);
-            access(code).then((data) => {
-                authority.next(data);
-            }).finally(() => {
-                setLoading(false);
-            });
-        } else {
-            setLoading(false);
-        }
-    }, [code]);
-
-    if (loading) {
-        return <Loader/>
-    }
-
-    if (!auth.status) {
-        return <SignIn/>
-    }
-
-    return <>{children}</>
-}
