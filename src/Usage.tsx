@@ -2,8 +2,7 @@ import {MetricsDTO, UsageDTO} from "./api";
 import {Interval} from "luxon";
 import {getNumIntl, invariant} from "./util";
 import {useInterval} from "./use";
-import {useQuery} from "@tanstack/react-query";
-import {Loader} from "./Loader";
+import {useSuspenseQuery} from "@tanstack/react-query";
 import {PageContainer} from "@toolpad/core";
 import {DatePickerToolbar} from "./DatePickerToolbar";
 import {
@@ -76,29 +75,24 @@ const selectUsage = (data: UsageDTO) => {
     return Object.values(groups).flatMap((group) => Object.values(group))
 }
 
-export const Usage = ({repositories = []}: { repositories?: string[] }) => {
+export const Usage = () => {
     const {interval} = useInterval()
-    const {data, isLoading} = useQuery<UsageDTO, void, RepositoryUsage[]>({
-        queryKey: ['aws', 'usage', new URLSearchParams(repositories.map((repository) => ['repository', repository]))],
+    const {data} = useSuspenseQuery<UsageDTO, void, RepositoryUsage[]>({
+        queryKey: ['aws', 'usage'],
         select: selectUsage,
     })
-
-    if (isLoading) {
-        return <Loader/>
-    }
 
     return <PageContainer slotProps={{
         toolbar: {
             shouldDisableMonth: (month) => !data?.some(({Interval}) => Interval.contains(month))
         }
     }} slots={{toolbar: DatePickerToolbar}}>
-
         {data?.filter(
             ({
                  Interval
              }) => interval.overlaps(Interval)
         ).map(({Repository, Entries, Total}) =>
-            <Stack>
+            <Stack key={Repository}>
                 <CardHeader avatar={<GitHub/>} title={Repository} titleTypographyProps={{
                     variant: 'h6',
                     flex: 1,

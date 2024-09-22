@@ -36,6 +36,7 @@ const client = new QueryClient({
             queryFn: async ({queryKey, meta}) => {
                 const {url, body} = serializeQueryKey(queryKey);
 
+
                 return authority.authorize(
                     ({access}) => fetch(url, {
                         body,

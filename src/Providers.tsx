@@ -1,17 +1,19 @@
 import * as React from "react";
-import {PropsWithChildren, useState} from "react";
+import {PropsWithChildren, Suspense, useEffect, useMemo} from "react";
 import {LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterLuxon} from '@mui/x-date-pickers/AdapterLuxon'
 import {Navigation, NavigationPageItem, Router} from "@toolpad/core";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import {styled} from "@mui/material";
-import {logo} from "./svg";
+import {logo} from "./assets";
 import {theme} from "./theme";
 import {QueryClientProvider, signInWithRedirect, signOut, useAuth, UserDTO} from "./api";
 import {AppProvider} from "@toolpad/core/AppProvider";
 import {useQuery} from "@tanstack/react-query";
 import {Auth} from "./Auth";
 import {SignIn} from "./SignIn";
+import {useLocation} from "./use";
+import {Loader} from "./Loader";
 
 const NAVIGATION: Navigation = [
     {
@@ -24,12 +26,50 @@ const NAVIGATION: Navigation = [
 
 const routes = NAVIGATION.filter((item): item is NavigationPageItem => item.kind === 'page').map((item) => `/${item.segment}`)
 
-const ensureRoute = (path: URL | string): string => routes.includes(path.toString()) ? path.toString() : routes[0]
+const ensureURL = (path: URL | string): URL => path instanceof URL ? path : new URL(path, window.location.origin)
+
+const ensureRoute = (path: URL | string): URL => {
+    const url = ensureURL(path);
+    return routes.includes(url.pathname) ? url : new URL(routes[0], window.location.origin)
+}
 
 const Logo = styled('img')(() => ({
     maxWidth: '100%',
+    minHeight: '100%',
     objectFit: 'contain'
 }))
+
+const useRouter = (initialState: string) => {
+    const {pathname, push, replace, searchParams} = useLocation();
+
+    useEffect(() => {
+        const url = ensureRoute(pathname);
+        replace((next) => {
+            next.pathname = url.pathname;
+            next.search = url.search;
+
+            return next;
+        })
+    }, [initialState]);
+
+    return useMemo<Router>(() => {
+        return {
+            pathname,
+            searchParams,
+            navigate: (path, {history = 'push'} = {}) => {
+                if (history === 'push') {
+                    const url = ensureRoute(path);
+                    push((next) => {
+                        next.pathname = url.pathname;
+                        next.search = url.search;
+
+                        return next;
+                    })
+                }
+            },
+        };
+    }, [pathname, push, replace, searchParams]);
+}
 
 const Layout = ({children}: PropsWithChildren<{}>) => {
     const auth = useAuth();
@@ -38,15 +78,7 @@ const Layout = ({children}: PropsWithChildren<{}>) => {
         enabled: auth.status,
     });
 
-    const [pathname, setPathname] = useState('/dashboard');
-
-    const router = React.useMemo<Router>(() => {
-        return {
-            pathname,
-            searchParams: new URLSearchParams(),
-            navigate: (path) => setPathname(ensureRoute(path)),
-        };
-    }, [pathname]);
+    const router = useRouter('/dashboard');
 
     return <LocalizationProvider dateAdapter={AdapterLuxon}>
         <AppProvider
@@ -75,8 +107,12 @@ const Layout = ({children}: PropsWithChildren<{}>) => {
     </LocalizationProvider>
 }
 
-export const Providers = ({children}: PropsWithChildren<{}>) => <QueryClientProvider>
-    <Layout>
-        <Auth fallback={<SignIn/>}>{children}</Auth>
-    </Layout>
-</QueryClientProvider>
+export const Providers = ({children}: PropsWithChildren<{}>) => <Suspense fallback={<Loader/>}>
+    <QueryClientProvider>
+        <Layout>
+            <Suspense fallback={<Loader/>}>
+                <Auth fallback={<SignIn/>}>{children}</Auth>
+            </Suspense>
+        </Layout>
+    </QueryClientProvider>
+</Suspense>

@@ -269,7 +269,11 @@ export interface UserDTO {
 }
 
 export const convertDTO = <T>(dto: T): T => JSON.parse(JSON.stringify(dto), (key, value) => {
-    const dt = DateTime.fromISO(value);
-    return dt.isValid ? dt : value;
+    if (typeof value === 'string') {
+        const dt = DateTime.fromISO(value);
+        return dt.isValid ? dt : value;
+    }
+
+    return value;
 })
 

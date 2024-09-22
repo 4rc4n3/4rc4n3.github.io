@@ -1,6 +1,7 @@
-import {BehaviorSubject, firstValueFrom} from "rxjs";
+import {BehaviorSubject, distinctUntilChanged, firstValueFrom, of, switchMap} from "rxjs";
 import {useEffect, useState} from "react";
 import {API} from "./config";
+import {useMutation, useSuspenseQuery} from "@tanstack/react-query";
 
 declare module '@tanstack/react-query' {
     interface Register {
@@ -63,6 +64,14 @@ class Authority extends BehaviorSubject<Auth> {
         }
     };
 
+    state = this.pipe(switchMap((auth) => {
+        if (auth.access.expires > Date.now()) {
+            return of(auth);
+        }
+
+        return this.refresh(auth).catch(() => Authority.defaultState);
+    }), distinctUntilChanged((a, b) => a.access.value === b.access.value && a.refresh.value === b.refresh.value));
+
     constructor(key: string) {
         super(JSON.parse(localStorage.getItem(key) || 'null') || Authority.defaultState);
         this.subscribe((auth) => {
@@ -70,12 +79,12 @@ class Authority extends BehaviorSubject<Auth> {
         });
     }
 
-    async authorize<T>(fn: (auth: Auth) => T) {
+    async authorize<T>(fn?: (auth: Auth) => T) {
         const auth = await this.getAuth();
         try {
-            return fn(auth);
+            return fn?.(auth);
         } catch (e) {
-            return fn(await this.refresh(auth));
+            return fn?.(await this.refresh(auth));
         }
     }
 
@@ -85,6 +94,9 @@ class Authority extends BehaviorSubject<Auth> {
                 this.next(auth);
 
                 return auth;
+            }).catch(() => {
+                this.clear();
+                return Promise.reject(Error('Not authenticated'))
             })
         }
 
@@ -117,28 +129,35 @@ export const signOut = () => {
 }
 
 export const useAuth = () => {
-    const [state, setState] = useState<Auth>({
-        access: {
-            value: '',
-            expires: 0
-        },
-        refresh: {
-            value: '',
-            expires: 0
-        }
+    const [state, setState] = useState<Auth>(authority.getValue());
+
+    const {mutateAsync: login, isPending} = useMutation({
+        mutationFn: (code: string) => access(code).then(async (data) => {
+            authority.next(data);
+            return authority.authorize()
+        })
     });
 
     useEffect(() => {
-        const subscription = authority.subscribe(setState);
+        const subscription = authority.state.subscribe(setState);
 
         return () => {
             subscription.unsubscribe();
         }
     }, []);
 
+    useSuspenseQuery({
+        queryKey: ['auth'],
+        queryFn: () => authority.authorize((auth) => auth).catch(() => Authority.defaultState),
+    })
+
+    const status = !isPending && state.access.expires > Date.now();
+
     return {
         state,
-        status: state.access.expires > Date.now(),
+        status,
+        isPending: false,
+        login,
     }
 }
 

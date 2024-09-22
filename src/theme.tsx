@@ -1,9 +1,6 @@
 import createPalette from "@mui/material/styles/createPalette";
 import {createTheme} from "@mui/material/styles";
-import {styled, typographyClasses} from "@mui/material";
-import {logo} from "./svg";
-import * as React from "react";
-import {AppProvider, AppProviderProps} from "@toolpad/core";
+import {typographyClasses} from "@mui/material";
 
 const palette = createPalette({
     mode: 'dark',
@@ -46,15 +43,3 @@ export const theme = createTheme({
         }
     }
 });
-
-const Logo = styled('img')(() => ({
-    maxWidth: '100%',
-    objectFit: 'contain'
-}))
-
-export const BrandedProvider = ({children}: Omit<AppProviderProps, 'branding' | 'theme'>) => <AppProvider
-    branding={{
-        logo: <Logo src={logo} alt="C0N9U17"/>,
-        title: 'CONDUIT',
-    }}
-    theme={theme}>{children}</AppProvider>
