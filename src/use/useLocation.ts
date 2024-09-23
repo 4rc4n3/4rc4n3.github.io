@@ -1,26 +1,28 @@
 import {useCallback, useEffect, useMemo, useState} from "react";
 
+const getLocation = (): URL => new URL(window.history.state?.location || window.location.href)
+
 const HistoryTarget = new EventTarget();
 
 export const useLocation = () => {
-    const [state, setState] = useState(window.location.href);
+    const [state, setState] = useState(getLocation().href);
 
     const push = useCallback((url: (url: URL) => URL) => {
-        const next = url(new URL(location.href));
+        const next = url(getLocation());
         if (next.href === location.href) return;
-        window.history.pushState({}, '', next);
+        window.history.pushState({location: next.href}, '', next);
         HistoryTarget.dispatchEvent(new Event('pushstate'));
     }, [])
 
     const replace = useCallback((url: (url: URL) => URL) => {
-        const next = url(new URL(location.href));
+        const next = url(getLocation());
         if (next.href === location.href) return;
-        window.history.replaceState({}, '', next);
+        window.history.replaceState({location: next.href}, '', next);
         HistoryTarget.dispatchEvent(new Event('replacestate'));
     }, [])
 
     useEffect(() => {
-        const listener = () => setState(window.location.href);
+        const listener = () => setState(getLocation().href);
         window.addEventListener('popstate', listener);
         HistoryTarget.addEventListener('pushstate', listener);
         HistoryTarget.addEventListener('replacestate', listener);

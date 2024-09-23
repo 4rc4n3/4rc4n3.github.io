@@ -17,7 +17,8 @@ import {
     TableContainer,
     TableFooter,
     TableHead,
-    TableRow, Typography
+    TableRow,
+    Typography
 } from "@mui/material";
 import {GitHub, OpenInNew} from "@mui/icons-material";
 import * as React from "react";
@@ -87,7 +88,9 @@ export const Usage = () => {
     useEffect(() => {
         if (data.length) {
             replace((url) => {
-                url.searchParams.set('range', data[data.length - 1].TimePeriod.toISODate());
+                if (!url.searchParams.has('range')) {
+                    url.searchParams.set('range', data[data.length - 1].TimePeriod.toISODate());
+                }
                 return url;
             })
         }
@@ -112,17 +115,17 @@ export const Usage = () => {
         ).map(({Repository, Entries, Total}) =>
             <Stack key={Repository}>
                 <CardHeader avatar={<GitHub/>} title={Repository} titleTypographyProps={{
-                        variant: 'h6',
-                        flex: 1,
-                    }} action={
-                        <IconButton
-                            color="primary"
-                            href={`https://github.com/${Repository}`}
-                            target="_blank"
-                        >
-                            <OpenInNew/>
-                        </IconButton>
-                    }
+                    variant: 'h6',
+                    flex: 1,
+                }} action={
+                    <IconButton
+                        color="primary"
+                        href={`https://github.com/${Repository}`}
+                        target="_blank"
+                    >
+                        <OpenInNew/>
+                    </IconButton>
+                }
                 />
                 <TableContainer component={Paper}>
                     <Table>

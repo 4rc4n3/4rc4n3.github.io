@@ -33,9 +33,9 @@ const client = new QueryClient({
     defaultOptions: {
         queries: {
             retry: false,
+            staleTime: 1000 * 60 * 5,
             queryFn: async ({queryKey, meta}) => {
                 const {url, body} = serializeQueryKey(queryKey);
-
 
                 return authority.authorize(
                     ({access}) => fetch(url, {

@@ -1,31 +1,42 @@
 import {DatePicker, DatePickerProps, DatePickerSlotProps, PickerValidDate} from "@mui/x-date-pickers";
 import {useRange} from "./use";
 import {PageContainerToolbar} from "@toolpad/core";
-import {Interval} from "luxon";
+import {DateTime, Interval} from "luxon";
 import * as React from "react";
 
-const fieldProps = {
+const fieldProps: any = {
     size: 'small',
-} as DatePickerSlotProps<PickerValidDate, true>['field']
+}
 
-export const DatePickerToolbar = ({shouldDisableMonth, disabled}: Pick<DatePickerProps<PickerValidDate>, 'shouldDisableMonth' | 'disabled'>) => {
+export const DatePickerToolbar = <TEnableAccessibleFieldDOMStructure extends boolean = false>(
+    {
+        slotProps: _slotProps,
+        ...props
+    }: Omit<DatePickerProps<PickerValidDate, TEnableAccessibleFieldDOMStructure>, 'value' | 'onChange'>
+) => {
     const {value, push} = useRange();
 
+    const slotProps: DatePickerSlotProps<PickerValidDate, TEnableAccessibleFieldDOMStructure> = {
+        field: fieldProps,
+        ..._slotProps
+    }
+
     return <PageContainerToolbar>
-        <DatePicker
+        <DatePicker<PickerValidDate, TEnableAccessibleFieldDOMStructure>
             label="Period"
             view="month"
             views={['month']}
             value={value?.start ?? null}
-            shouldDisableMonth={shouldDisableMonth}
-            disabled={disabled}
-            slotProps={{
-                field: fieldProps
-            }}
+            slotProps={slotProps}
             onChange={(value) => {
                 push((url) => {
                     if (value?.isValid) {
-                        url.searchParams.set('range', Interval.after(value.startOf('month'), {months: 1}).toISODate());
+                        const start = value.startOf('month')
+                        const end = DateTime.min(start.endOf('month'), DateTime.now().startOf('day'));
+                        const range = Interval.fromDateTimes(start, end);
+                        if (range) {
+                            url.searchParams.set('range', range.toISODate());
+                        }
                     } else {
                         url.searchParams.delete('range');
                     }
@@ -33,6 +44,7 @@ export const DatePickerToolbar = ({shouldDisableMonth, disabled}: Pick<DatePicke
                     return url;
                 })
             }}
+            {...props}
         />
     </PageContainerToolbar>
 }

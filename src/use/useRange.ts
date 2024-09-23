@@ -1,4 +1,4 @@
-import {useEffect, useMemo} from "react";
+import {useMemo} from "react";
 import {Interval} from "luxon";
 import {useLocation} from "./useLocation";
 import {invariant} from "../util";
@@ -14,17 +14,7 @@ export const useRange = () => {
             invariant(range.isValid, 'Invalid range');
         }
         return range;
-    }, [searchParams])
-
-    useEffect(() => {
-        return () => {
-            replace((url) => {
-                url.searchParams.delete('range');
-                return url;
-            })
-        }
-    }, [replace]);
-
+    }, [searchParams]);
 
     return {
         value,

@@ -1,8 +1,8 @@
 import * as React from "react";
-import {PropsWithChildren, Suspense, useEffect, useMemo} from "react";
+import {PropsWithChildren, Suspense, useEffect} from "react";
 import {LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterLuxon} from '@mui/x-date-pickers/AdapterLuxon'
-import {Navigation, NavigationPageItem, Router} from "@toolpad/core";
+import {Navigation, NavigationPageItem} from "@toolpad/core";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import {logo} from "./assets";
 import {theme} from "./theme";
@@ -11,9 +11,9 @@ import {AppProvider} from "@toolpad/core/AppProvider";
 import {useQuery} from "@tanstack/react-query";
 import {Auth} from "./Auth";
 import {SignIn} from "./SignIn";
-import {useLocation} from "./use";
+import {useRouter, ensureURL} from "./use";
 import {Loader} from "./Loader";
-import {Image, imageClasses} from "./Image";
+import {Image} from "./Image";
 import {appBarClasses} from "@mui/material";
 
 const NAVIGATION: Navigation = [
@@ -27,43 +27,9 @@ const NAVIGATION: Navigation = [
 
 const routes = NAVIGATION.filter((item): item is NavigationPageItem => item.kind === 'page').map((item) => `/${item.segment}`)
 
-const ensureURL = (path: URL | string): URL => path instanceof URL ? path : new URL(path, window.location.origin)
-
 const ensureRoute = (path: URL | string): URL => {
     const url = ensureURL(path);
     return routes.includes(url.pathname) ? url : new URL(routes[0], window.location.origin)
-}
-
-const useRouter = (initialState: string) => {
-    const {pathname, push, replace, searchParams} = useLocation();
-
-    useEffect(() => {
-        const url = ensureRoute(pathname);
-        replace((next) => {
-            next.pathname = url.pathname;
-            next.search = url.search;
-
-            return next;
-        })
-    }, [initialState]);
-
-    return useMemo<Router>(() => {
-        return {
-            pathname,
-            searchParams,
-            navigate: (path, {history = 'push'} = {}) => {
-                if (history === 'push') {
-                    const url = ensureRoute(path);
-                    push((next) => {
-                        next.pathname = url.pathname;
-                        next.search = url.search;
-
-                        return next;
-                    })
-                }
-            },
-        };
-    }, [pathname, push, replace, searchParams]);
 }
 
 const Layout = ({children}: PropsWithChildren<{}>) => {
@@ -74,6 +40,14 @@ const Layout = ({children}: PropsWithChildren<{}>) => {
     });
 
     const router = useRouter('/dashboard');
+
+    useEffect(() => {
+        const ensured = ensureRoute(router.pathname);
+
+        if (ensured.pathname !== router.pathname) {
+            router.navigate(ensured);
+        }
+    }, [router.pathname, router.navigate]);
 
     return <LocalizationProvider dateAdapter={AdapterLuxon}>
         <AppProvider
