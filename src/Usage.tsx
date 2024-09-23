@@ -1,11 +1,12 @@
 import {MetricsDTO, UsageDTO} from "./api";
 import {Interval} from "luxon";
 import {getNumIntl, invariant} from "./util";
-import {useInterval} from "./use";
+import {useRange} from "./use";
 import {useSuspenseQuery} from "@tanstack/react-query";
 import {PageContainer} from "@toolpad/core";
 import {DatePickerToolbar} from "./DatePickerToolbar";
 import {
+    Alert,
     CardHeader,
     IconButton,
     Paper,
@@ -16,10 +17,11 @@ import {
     TableContainer,
     TableFooter,
     TableHead,
-    TableRow
+    TableRow, Typography
 } from "@mui/material";
 import {GitHub, OpenInNew} from "@mui/icons-material";
 import * as React from "react";
+import {useEffect} from "react";
 
 interface UsageEntry extends MetricsDTO {
     Repository: string;
@@ -32,7 +34,7 @@ interface RepositoryUsage {
         Amount: number;
         Unit: string;
     };
-    Interval: Interval<true>;
+    TimePeriod: Interval<true>;
     Entries: UsageEntry[];
 }
 
@@ -46,10 +48,10 @@ const selectUsage = (data: UsageDTO) => {
             if (!groups[Repository]) {
                 groups[Repository] = {}
             }
-            const interval = Interval.fromDateTimes(TimePeriod.Start, TimePeriod.End)
-            invariant(interval.isValid, 'Invalid interval');
+            const range = Interval.fromDateTimes(TimePeriod.Start, TimePeriod.End)
+            invariant(range.isValid, 'Invalid range');
 
-            const date = interval.toISODate();
+            const date = range.toISODate();
 
             const Record = groups[Repository][date] || {
                 Repository,
@@ -57,7 +59,7 @@ const selectUsage = (data: UsageDTO) => {
                     Amount: 0,
                     Unit: Metrics.UnblendedCost.Unit
                 },
-                Interval: interval,
+                TimePeriod: range,
                 Entries: []
             }
 
@@ -76,35 +78,51 @@ const selectUsage = (data: UsageDTO) => {
 }
 
 export const Usage = () => {
-    const {interval} = useInterval()
+    const {value, replace} = useRange()
     const {data} = useSuspenseQuery<UsageDTO, void, RepositoryUsage[]>({
         queryKey: ['aws', 'usage'],
         select: selectUsage,
-    })
+    });
+
+    useEffect(() => {
+        if (data.length) {
+            replace((url) => {
+                url.searchParams.set('range', data[data.length - 1].TimePeriod.toISODate());
+                return url;
+            })
+        }
+    }, [data, replace]);
 
     return <PageContainer slotProps={{
         toolbar: {
-            shouldDisableMonth: (month) => !data?.some(({Interval}) => Interval.contains(month))
+            shouldDisableMonth: (month) => !data.some(({TimePeriod}) => TimePeriod.contains(month)),
+            disabled: !data.length
         }
     }} slots={{toolbar: DatePickerToolbar}}>
-        {data?.filter(
+        {!data.length && <Stack sx={{flex: 1}}>
+            <Stack sx={{alignItems: 'center', justifyContent: 'center', height: 250}}>
+                <Typography variant="h6" color="textDisabled">No usage information available yet.</Typography>
+            </Stack>
+            <Alert severity="info">Keep in mind that usage may take up to 24 hours to process and appear here.</Alert>
+        </Stack>}
+        {data.filter(
             ({
-                 Interval
-             }) => interval.overlaps(Interval)
+                 TimePeriod
+             }) => value?.overlaps(TimePeriod)
         ).map(({Repository, Entries, Total}) =>
             <Stack key={Repository}>
                 <CardHeader avatar={<GitHub/>} title={Repository} titleTypographyProps={{
-                    variant: 'h6',
-                    flex: 1,
-                }} action={
-                    <IconButton
-                        color="primary"
-                        href={`https://github.com/${Repository}`}
-                        target="_blank"
-                    >
-                        <OpenInNew/>
-                    </IconButton>
-                }
+                        variant: 'h6',
+                        flex: 1,
+                    }} action={
+                        <IconButton
+                            color="primary"
+                            href={`https://github.com/${Repository}`}
+                            target="_blank"
+                        >
+                            <OpenInNew/>
+                        </IconButton>
+                    }
                 />
                 <TableContainer component={Paper}>
                     <Table>

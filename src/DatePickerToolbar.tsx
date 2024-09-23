@@ -1,5 +1,5 @@
 import {DatePicker, DatePickerProps, DatePickerSlotProps, PickerValidDate} from "@mui/x-date-pickers";
-import {useInterval} from "./use";
+import {useRange} from "./use";
 import {PageContainerToolbar} from "@toolpad/core";
 import {Interval} from "luxon";
 import * as React from "react";
@@ -8,25 +8,26 @@ const fieldProps = {
     size: 'small',
 } as DatePickerSlotProps<PickerValidDate, true>['field']
 
-export const DatePickerToolbar = ({shouldDisableMonth}: Pick<DatePickerProps<PickerValidDate>, 'shouldDisableMonth'>) => {
-    const {interval, push} = useInterval();
+export const DatePickerToolbar = ({shouldDisableMonth, disabled}: Pick<DatePickerProps<PickerValidDate>, 'shouldDisableMonth' | 'disabled'>) => {
+    const {value, push} = useRange();
 
     return <PageContainerToolbar>
         <DatePicker
             label="Period"
             view="month"
             views={['month']}
-            value={interval?.start}
+            value={value?.start ?? null}
             shouldDisableMonth={shouldDisableMonth}
+            disabled={disabled}
             slotProps={{
                 field: fieldProps
             }}
             onChange={(value) => {
                 push((url) => {
                     if (value?.isValid) {
-                        url.searchParams.set('interval', Interval.after(value.startOf('month'), {months: 1}).toISODate());
+                        url.searchParams.set('range', Interval.after(value.startOf('month'), {months: 1}).toISODate());
                     } else {
-                        url.searchParams.delete('interval');
+                        url.searchParams.delete('range');
                     }
 
                     return url;

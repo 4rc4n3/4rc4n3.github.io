@@ -4,7 +4,6 @@ import {LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterLuxon} from '@mui/x-date-pickers/AdapterLuxon'
 import {Navigation, NavigationPageItem, Router} from "@toolpad/core";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import {styled} from "@mui/material";
 import {logo} from "./assets";
 import {theme} from "./theme";
 import {QueryClientProvider, signInWithRedirect, signOut, useAuth, UserDTO} from "./api";
@@ -14,6 +13,7 @@ import {Auth} from "./Auth";
 import {SignIn} from "./SignIn";
 import {useLocation} from "./use";
 import {Loader} from "./Loader";
+import {Image} from "./Image";
 
 const NAVIGATION: Navigation = [
     {
@@ -32,12 +32,6 @@ const ensureRoute = (path: URL | string): URL => {
     const url = ensureURL(path);
     return routes.includes(url.pathname) ? url : new URL(routes[0], window.location.origin)
 }
-
-const Logo = styled('img')(() => ({
-    maxWidth: '100%',
-    minHeight: '100%',
-    objectFit: 'contain'
-}))
 
 const useRouter = (initialState: string) => {
     const {pathname, push, replace, searchParams} = useLocation();
@@ -84,7 +78,7 @@ const Layout = ({children}: PropsWithChildren<{}>) => {
         <AppProvider
             navigation={NAVIGATION}
             branding={{
-                logo: <Logo src={logo} alt="C0N9U17"/>,
+                logo: <Image src={logo} alt="C0N9U17"/>,
                 title: 'CONDUIT',
             }}
             router={router}
@@ -107,12 +101,10 @@ const Layout = ({children}: PropsWithChildren<{}>) => {
     </LocalizationProvider>
 }
 
-export const Providers = ({children}: PropsWithChildren<{}>) => <Suspense fallback={<Loader/>}>
-    <QueryClientProvider>
-        <Layout>
-            <Suspense fallback={<Loader/>}>
-                <Auth fallback={<SignIn/>}>{children}</Auth>
-            </Suspense>
-        </Layout>
-    </QueryClientProvider>
-</Suspense>
+export const Providers = ({children}: PropsWithChildren<{}>) => <QueryClientProvider>
+    <Layout>
+        <Suspense fallback={<Loader/>}>
+            <Auth fallback={<SignIn/>}>{children}</Auth>
+        </Suspense>
+    </Layout>
+</QueryClientProvider>

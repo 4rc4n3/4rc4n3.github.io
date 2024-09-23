@@ -1,10 +1,14 @@
-import {SignInPage} from "@toolpad/core";
+import {SignInPage, SignInPageProps} from "@toolpad/core";
 import React from "react";
 import {signInWithRedirect} from "./api";
 
-export const SignIn = () => <SignInPage signIn={() => {
-    return signInWithRedirect();
-}} providers={[{
+const providers = [{
     id: 'github',
     name: 'GitHub',
-}]}/>
+}]
+
+export const SignIn = (props: SignInPageProps) => <SignInPage
+    signIn={signInWithRedirect}
+    providers={providers}
+    {...props}
+/>
