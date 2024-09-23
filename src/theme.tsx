@@ -32,13 +32,16 @@ export const theme = createTheme({
     components: {
         MuiAppBar: {
             styleOverrides: {
-                root: {
+                root: ({theme}) => ({
                     [`.${typographyClasses.h6}`]: {
                         fontWeight: 300,
                         fontSize: 32,
                         letterSpacing: -3,
+                        [theme.breakpoints.down('sm')]: {
+                            display: 'none'
+                        }
                     }
-                }
+                })
             }
         }
     }

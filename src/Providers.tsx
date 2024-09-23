@@ -14,6 +14,7 @@ import {SignIn} from "./SignIn";
 import {useLocation} from "./use";
 import {Loader} from "./Loader";
 import {Image, imageClasses} from "./Image";
+import {appBarClasses} from "@mui/material";
 
 const NAVIGATION: Navigation = [
     {
@@ -79,7 +80,7 @@ const Layout = ({children}: PropsWithChildren<{}>) => {
             navigation={NAVIGATION}
             branding={{
                 logo: <Image src={logo} sx={(theme) => ({
-                    [`&.${imageClasses.width[250]}`]: {
+                    [`:not(.${appBarClasses.root} &)`]: {
                         filter: `drop-shadow(5px 5px 0px ${theme.palette.primary.main})`
                     }
                 })} alt="CONDUIT"/>,
