@@ -4,13 +4,6 @@
         color="white"
         xml:space="preserve"
         xmlns="http://www.w3.org/2000/svg">
-    <style>
-        @container (max-width: 200px) {
-            #path {
-                filter: drop-shadow(5px 5px 0px #aa7ae4);
-            }
-        }
-    </style>
     <g transform="translate(-43.54874,-21.847865)">
         <path
                 id="path"

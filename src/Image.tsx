@@ -32,7 +32,4 @@ export const Image = styled((props: DetailedHTMLProps<ImgHTMLAttributes<HTMLImag
     maxWidth: '100%',
     minHeight: '100%',
     objectFit: 'contain',
-    [`&.${imageClasses.width[250]}`]: {
-        filter: 'drop-shadow(5px 5px 0px #aa7ae4)'
-    }
 }))

@@ -13,7 +13,7 @@ import {Auth} from "./Auth";
 import {SignIn} from "./SignIn";
 import {useLocation} from "./use";
 import {Loader} from "./Loader";
-import {Image} from "./Image";
+import {Image, imageClasses} from "./Image";
 
 const NAVIGATION: Navigation = [
     {
@@ -78,7 +78,11 @@ const Layout = ({children}: PropsWithChildren<{}>) => {
         <AppProvider
             navigation={NAVIGATION}
             branding={{
-                logo: <Image src={logo} alt="C0N9U17"/>,
+                logo: <Image src={logo} sx={(theme) => ({
+                    [`&.${imageClasses.width[250]}`]: {
+                        filter: `drop-shadow(5px 5px 0px ${theme.palette.primary.main})`
+                    }
+                })} alt="CONDUIT"/>,
                 title: 'CONDUIT',
             }}
             router={router}
